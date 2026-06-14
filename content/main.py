@@ -12,7 +12,8 @@ _STATION_CARDS = "".join(
     for slug, name in STATIONS
 )
 
-_JSONLD = f"""<link rel="preload" as="image" href="/assets/hero.webp" type="image/webp" fetchpriority="high">
+_JSONLD = f"""<meta name="naver-site-verification" content="60db34c2e8adccdcaf51e8d9732fde69cebf3f09">
+<link rel="preload" as="image" href="/assets/hero.webp" type="image/webp" fetchpriority="high">
 <script type="application/ld+json">
 {{
   "@context": "https://schema.org",

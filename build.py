@@ -5,8 +5,12 @@ content/ 패키지의 페이지 정의를 읽어 정적 HTML을 생성한다.
 
 규칙(자동 적용):
   - 본문 텍스트 2,000자 미만 페이지는 robots noindex 처리
-  - sitemap.xml 에는 index 허용 페이지만 포함
+  - sitemap.xml·rss.xml 에는 index 허용 페이지만 포함
   - 모든 페이지에 WebPage·BreadcrumbList 구조화 데이터 자동 삽입
+  - robots.txt, IndexNow 키 파일({KEY}.txt), urls.txt 자동 생성
+
+빌드 후 색인 통보:
+  python3 build.py && python3 notify_indexnow.py   # 빙·네이버·얀덱스 즉시 통보
 """
 import html
 import json
@@ -14,12 +18,14 @@ import os
 import re
 import shutil
 import sys
+from datetime import datetime, timezone
+from email.utils import format_datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from content import PAGES
-from content.site import (BASE_URL, BRAND, BRAND_MARK, NAV, PHONE,
-                          PHONE_DISPLAY)
+from content.site import (BASE_URL, BRAND, BRAND_MARK, INDEXNOW_KEY, NAV,
+                          PHONE, PHONE_DISPLAY)
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MIN_INDEX_CHARS = 2000
@@ -318,7 +324,10 @@ def render_page(page: dict) -> str:
 
 def build() -> None:
     report = []
-    sitemap_urls = []
+    sitemap_pages = []  # (url, page) — index 허용 페이지만
+    site = BASE_URL.rstrip("/")
+    now = datetime.now(timezone.utc)
+    lastmod = now.strftime("%Y-%m-%d")
 
     for page in PAGES:
         path = page["path"]  # "" 또는 "namyangju/.../" 형태
@@ -331,12 +340,13 @@ def build() -> None:
         chars = text_length(page["body"])
         noindex = page.get("noindex", False) or chars < MIN_INDEX_CHARS
         if not noindex:
-            sitemap_urls.append(BASE_URL.rstrip("/") + "/" + path)
+            sitemap_pages.append((site + "/" + path, page))
         report.append((path or "/", chars, "noindex" if noindex else "index"))
 
-    # sitemap.xml
+    # sitemap.xml (lastmod 포함 — 크롤러 재방문 신호)
     urls = "\n".join(
-        f"  <url><loc>{u}</loc></url>" for u in sitemap_urls
+        f"  <url><loc>{u}</loc><lastmod>{lastmod}</lastmod></url>"
+        for u, _ in sitemap_pages
     )
     with open(os.path.join(ROOT, "sitemap.xml"), "w", encoding="utf-8") as f:
         f.write(
@@ -345,12 +355,50 @@ def build() -> None:
             f"{urls}\n</urlset>\n"
         )
 
-    # robots.txt
+    # rss.xml (RSS 2.0 피드 — 네이버 등 피드 기반 수집 보조)
+    pub = format_datetime(now)
+    items = []
+    for u, page in sitemap_pages:
+        items.append(
+            "    <item>\n"
+            f"      <title>{html.escape(page['title'])}</title>\n"
+            f"      <link>{u}</link>\n"
+            f"      <guid isPermaLink=\"true\">{u}</guid>\n"
+            f"      <description>{html.escape(page['desc'])}</description>\n"
+            f"      <pubDate>{pub}</pubDate>\n"
+            "    </item>"
+        )
+    items_xml = "\n".join(items)
+    with open(os.path.join(ROOT, "rss.xml"), "w", encoding="utf-8") as f:
+        f.write(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n'
+            "  <channel>\n"
+            f"    <title>{html.escape(BRAND)} 남양주 출장마사지·홈타이</title>\n"
+            f"    <link>{site}/</link>\n"
+            f'    <atom:link href="{site}/rss.xml" rel="self" type="application/rss+xml"/>\n'
+            "    <description>남양주시 읍·면·동·역세권별 출장마사지·홈타이 방문 예약 안내</description>\n"
+            "    <language>ko</language>\n"
+            f"    <lastBuildDate>{pub}</lastBuildDate>\n"
+            f"{items_xml}\n"
+            "  </channel>\n</rss>\n"
+        )
+
+    # robots.txt (sitemap + rss 명시)
     with open(os.path.join(ROOT, "robots.txt"), "w", encoding="utf-8") as f:
         f.write(
             "User-agent: *\nAllow: /\n\n"
-            f"Sitemap: {BASE_URL.rstrip('/')}/sitemap.xml\n"
+            f"Sitemap: {site}/sitemap.xml\n"
+            f"Sitemap: {site}/rss.xml\n"
         )
+
+    # IndexNow 키 파일 — 루트에 {KEY}.txt (내용도 키 그 자체)
+    with open(os.path.join(ROOT, f"{INDEXNOW_KEY}.txt"), "w", encoding="utf-8") as f:
+        f.write(INDEXNOW_KEY + "\n")
+
+    # 색인 통보용 URL 목록 (notify_indexnow.py 가 사용)
+    with open(os.path.join(ROOT, "urls.txt"), "w", encoding="utf-8") as f:
+        f.write("\n".join(u for u, _ in sitemap_pages) + "\n")
 
     # .nojekyll (GitHub Pages)
     open(os.path.join(ROOT, ".nojekyll"), "w").close()
@@ -360,7 +408,8 @@ def build() -> None:
     for p, c, r in sorted(report):
         flag = "" if (r == "noindex" or c >= MIN_INDEX_CHARS) else "  WARN"
         print(f"{p.ljust(width)}  {str(c).rjust(5)}  {r}{flag}")
-    print(f"\n{len(report)} pages built, {len(sitemap_urls)} in sitemap.")
+    print(f"\n{len(report)} pages built, {len(sitemap_pages)} in sitemap/rss.")
+    print(f"IndexNow key file: /{INDEXNOW_KEY}.txt")
 
 
 if __name__ == "__main__":
