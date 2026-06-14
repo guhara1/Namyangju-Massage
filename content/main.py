@@ -13,7 +13,7 @@ _STATION_CARDS = "".join(
 )
 
 _JSONLD = f"""<meta name="naver-site-verification" content="60db34c2e8adccdcaf51e8d9732fde69cebf3f09">
-<link rel="preload" as="image" href="/assets/hero.webp" type="image/webp" fetchpriority="high">
+<link rel="preload" as="image" fetchpriority="high" href="/assets/hero-960.webp" imagesrcset="/assets/hero-640.webp 640w, /assets/hero-960.webp 960w, /assets/hero-1200.webp 1200w" imagesizes="(max-width: 920px) 88vw, 560px">
 <script type="application/ld+json">
 {{
   "@context": "https://schema.org",
@@ -99,7 +99,7 @@ _HERO = f"""<section class="hero">
     </div>
     <div class="hero-media">
       <picture>
-        <source srcset="/assets/hero.webp" type="image/webp">
+        <source type="image/webp" srcset="/assets/hero-640.webp 640w, /assets/hero-960.webp 960w, /assets/hero-1200.webp 1200w" sizes="(max-width: 920px) 88vw, 560px">
         <img src="/assets/hero.jpg" alt="남양주 출장마사지·남양주시 홈타이 방문 관리 안내" width="1200" height="675" fetchpriority="high" decoding="async">
       </picture>
     </div>

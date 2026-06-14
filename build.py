@@ -189,7 +189,7 @@ def render_page_hero(page: dict) -> str:
     </div>
     <div class="hero-media">
       <picture>
-        <source srcset="{img_webp}" type="image/webp">
+        <source type="image/webp" srcset="/assets/hero-640.webp 640w, /assets/hero-960.webp 960w, /assets/hero-1200.webp 1200w" sizes="(max-width: 920px) 88vw, 560px">
         <img src="{img}" alt="{alt}" width="1200" height="675" fetchpriority="high" decoding="async">
       </picture>
     </div>
@@ -222,15 +222,17 @@ def render_page(page: dict) -> str:
     # 메인은 전용 히어로, 나머지는 공통 슬림 히어로(제목+이미지)를 사용한다.
     page_head = hero if hero else render_page_hero(page)
 
-    # 하위 페이지의 LCP(히어로 이미지)를 앞당기기 위해 webp 를 preload 한다.
+    # 하위 페이지의 LCP(히어로 이미지)를 앞당기기 위해 반응형 webp 를 preload 한다.
+    # 모바일은 작은 변형(640w≈14KB)을, 데스크톱은 큰 변형을 받아 LCP 를 줄인다.
     # 메인은 extra_head 에서 이미 preload 하므로 중복하지 않는다.
     hero_preload = ""
     if not hero:
-        _himg = page.get("hero_image", "/assets/hero.jpg")
-        _hwebp = page.get("hero_image_webp",
-                          re.sub(r"\.(jpg|jpeg|png)$", ".webp", _himg))
-        hero_preload = (f'<link rel="preload" as="image" href="{_hwebp}" '
-                        f'type="image/webp" fetchpriority="high">\n')
+        hero_preload = (
+            '<link rel="preload" as="image" fetchpriority="high" '
+            'href="/assets/hero-960.webp" '
+            'imagesrcset="/assets/hero-640.webp 640w, /assets/hero-960.webp 960w, /assets/hero-1200.webp 1200w" '
+            'imagesizes="(max-width: 920px) 88vw, 560px">\n'
+        )
 
     body, toc_items = inject_toc(body)
     toc_html = render_toc(toc_items)
