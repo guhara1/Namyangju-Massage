@@ -31,6 +31,22 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 MIN_INDEX_CHARS = 2000
 
 
+def _load_inline_css() -> str:
+    """style.css 를 읽어 <head> 에 인라인할 수 있도록 가볍게 압축한다.
+
+    렌더링을 막는 외부 CSS 요청(임계 요청 체인)을 없애 LCP/첫 페인트를
+    앞당긴다. 주석과 불필요한 공백만 제거하는 보수적 압축이라 안전하다."""
+    with open(os.path.join(ROOT, "assets", "style.css"), encoding="utf-8") as f:
+        css = f.read()
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)      # 주석 제거
+    css = re.sub(r"\s+", " ", css)                        # 연속 공백 → 1칸
+    css = re.sub(r"\s*([{};])\s*", r"\1", css)            # 중괄호·세미콜론 주변 공백 제거
+    return css.strip()
+
+
+INLINE_CSS = _load_inline_css()
+
+
 def text_length(body_html: str) -> int:
     """태그를 제거한 본문 글자수(공백 포함, 연속 공백은 1자).
     공통 요금 블록은 페이지 고유 본문이 아니므로 측정에서 제외한다."""
@@ -238,7 +254,7 @@ def render_page(page: dict) -> str:
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700;900&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700;900&display=swap"></noscript>
-<link rel="stylesheet" href="/assets/style.css">
+<style>{INLINE_CSS}</style>
 {structured}{extra_head}</head>
 <body>
 <header class="site-header">
