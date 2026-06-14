@@ -351,7 +351,7 @@ h2::before {
   content: counter(sec, decimal-leading-zero);
   display: block;
   font-family: var(--serif);
-  font-size: 0.78rem; font-weight: 600;
+  font-size: 0.78rem; font-weight: 700;
   color: var(--gold); letter-spacing: 0.5em;
   margin-bottom: 10px; opacity: 0.9;
 }
@@ -469,7 +469,7 @@ strong { color: var(--gold-soft); font-weight: 700; }
   font-size: 2.1rem; font-weight: 800; color: #fff;
   line-height: 1.2; margin: 0; letter-spacing: 0.01em;
 }
-.price-value span { font-size: 0.95rem; font-weight: 600; color: var(--text-dim); margin-left: 3px; }
+.price-value span { font-size: 0.95rem; font-weight: 700; color: var(--text-dim); margin-left: 3px; }
 .price-time { font-size: 0.82rem; color: var(--gold); letter-spacing: 0.1em; margin: 2px 0 6px; }
 .price-desc { font-size: 0.88rem; color: var(--text-dim); margin: 0 0 18px; flex: 1; }
 .price-btn {
