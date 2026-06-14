@@ -222,6 +222,16 @@ def render_page(page: dict) -> str:
     # 메인은 전용 히어로, 나머지는 공통 슬림 히어로(제목+이미지)를 사용한다.
     page_head = hero if hero else render_page_hero(page)
 
+    # 하위 페이지의 LCP(히어로 이미지)를 앞당기기 위해 webp 를 preload 한다.
+    # 메인은 extra_head 에서 이미 preload 하므로 중복하지 않는다.
+    hero_preload = ""
+    if not hero:
+        _himg = page.get("hero_image", "/assets/hero.jpg")
+        _hwebp = page.get("hero_image_webp",
+                          re.sub(r"\.(jpg|jpeg|png)$", ".webp", _himg))
+        hero_preload = (f'<link rel="preload" as="image" href="{_hwebp}" '
+                        f'type="image/webp" fetchpriority="high">\n')
+
     body, toc_items = inject_toc(body)
     toc_html = render_toc(toc_items)
     layout_cls = "page-layout has-toc" if toc_html else "page-layout"
@@ -254,7 +264,7 @@ def render_page(page: dict) -> str:
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700;900&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600;700;900&display=swap"></noscript>
-<style>{INLINE_CSS}</style>
+{hero_preload}<style>{INLINE_CSS}</style>
 {structured}{extra_head}</head>
 <body>
 <header class="site-header">
